@@ -3,10 +3,11 @@ const Escrow = artifacts.require("Escrow");
 const { BN } = require("@openzeppelin/test-helpers");
 
 module.exports = async (deployer, _, accounts) => {
-  let vibra = await deployer.deploy(Vibra, { from: accounts[0] });
-  let escrow = await deployer.deploy(
+  await deployer.deploy(Vibra, { from: accounts[0] });
+  await deployer.deploy(
     Escrow,
-    new BN(5),
+    Vibra.address,
+    new BN("1"),
     accounts[1],
     accounts[2],
     { from: accounts[0] }

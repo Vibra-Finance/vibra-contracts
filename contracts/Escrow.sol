@@ -51,7 +51,7 @@ contract Escrow {
         vibra.transfer(msg.sender, amount);
 
         state = State.AWAITING_DELIVERY;
-      
+
         emit Deposit(msg.sender, amount);
     }
 
