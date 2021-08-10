@@ -33,18 +33,35 @@ contract("Vibra", async (accounts) => {
   it("Should send 5 tokens to the designated smart contract address", async () => {
     await instance.transferFrom(admin, smartContract, this.value);
 
-    let balance = await instance.balanceOf(smartContract);
+    let balance = await instance.balanceOf.call(smartContract);
 
     assert.equal(balance.toString(), this.value.toString());
   });
 
-  it("Should approve the smart contract to spend 5 tokens", async () => {
-    let receipt = await instance.increaseAllowance(smartContract, this.value);
+  it("Should approve the smart contract to spend 5 tokens from admin address", async () => {
+    let receipt = await instance.increaseAllowance(smartContract, this.value, {
+      from: admin,
+    });
 
     expectEvent(receipt, "Approval", {
       owner: admin,
       spender: smartContract,
       value: this.value,
     });
+  });
+
+  it("Should send 5 tokens from smart contract to receiver", async () => {
+    await instance.increaseAllowance(smartContract, constants.MAX_UINT256, {
+      from: admin,
+    });
+    await instance.transfer(smartContract, this.value, {
+      from: admin,
+    });
+
+    await instance.transfer(reciever, this.value, { from: smartContract });
+
+    let balance = await instance.balanceOf.call(reciever);
+
+    assert.equal(balance.toString(), this.value.toString());
   });
 });
