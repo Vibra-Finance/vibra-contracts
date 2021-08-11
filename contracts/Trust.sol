@@ -12,17 +12,26 @@ contract Trust {
     uint256 public minBalance;
 
     modifier onlyAdmin() {
-        require(msg.sender == admin);
+        require(
+            msg.sender == admin,
+            "Only the admin can call this function"
+        );
         _;
     }
 
     modifier onlyBeneficiary() {
-        require(msg.sender == beneficiary);
+        require(
+            msg.sender == beneficiary,
+            "Only the beneficiary can call this function"
+        );
         _;
     }
 
     modifier onlyOrganization() {
-        require(msg.sender == organization);
+        require(
+            msg.sender == organization,
+            "Only the organization can call this function"
+        );
         _;
     }
 
