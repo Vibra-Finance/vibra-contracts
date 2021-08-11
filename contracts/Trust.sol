@@ -15,6 +15,16 @@ contract Trust {
         _;
     }
 
+    modifier onlyBeneficiary() {
+        require(msg.sender == beneficiary);
+        _;
+    }
+
+    modifier onlyOrganization() {
+        require(msg.sender == organization);
+        _;
+    }
+
     event Payment(address indexed _from, address indexed _to, uint256 _amount);
     event Deposit(address indexed _from, uint256 _amount);
     event Withdrawal(address indexed _to, uint256 _amount);
