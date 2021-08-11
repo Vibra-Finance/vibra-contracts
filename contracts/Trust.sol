@@ -89,7 +89,7 @@ contract Trust {
 
     function withdraw(uint256 amount) public onlyAdmin returns (bool) {
         require(balance > amount, "Insufficient balance");
-        require(vibra.transferFrom(address(this), msg.sender, amount));
+        require(vibra.transfer(msg.sender, amount));
 
         balance -= amount;
         emit Withdrawal(msg.sender, amount);
@@ -99,8 +99,7 @@ contract Trust {
     function withdrawAll() public onlyAdmin returns (bool) {
         require(balance > 0, "There is no balance");
         require(
-            vibra.transferFrom(
-                address(this),
+            vibra.transfer(
                 msg.sender,
                 address(this).balance
             ),

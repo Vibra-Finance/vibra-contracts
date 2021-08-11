@@ -39,7 +39,7 @@ contract("Trust", async (accounts) => {
     assert.equal(balance.toString(), this.value.toString());
   });
 
-  it("Should emit a deposit event once the admin has deposited", async () => {
+  it("Should emit a Deposit event once the admin has deposited", async () => {
     await vibra.increaseAllowance(trust.address, this.value, { from: admin });
     let receipt = await trust.deposit(this.value, { from: admin });
 
@@ -88,4 +88,32 @@ contract("Trust", async (accounts) => {
       _amount: this.fees,
     });
   });
+
+  it("Should revert when somebody other than the admin tries to withdraw", async () => {
+    await this.deposit();
+
+    await expectRevert(
+      trust.withdraw(this.fees, { from: organization }),
+      "Only the admin can call this function"
+    );
+  });
+
+  it("Should allow the admin to withdraw 1 token from the contract", async () => {
+    await this.deposit();
+    await trust.withdraw(this.fees, { from: admin });
+
+    let balance = await vibra.balanceOf.call(admin);
+
+    assert.equal(balance.toString(), this.fees.toString());
+  });
+
+  it("Should emit a Withdrawal event when the admin withdraws from contract", async () => {
+    await this.deposit();
+    let receipt = await trust.withdraw(this.fees, { from: admin });
+
+    expectEvent(receipt, "Withdrawal",{
+      _to: admin,
+      _amount: this.fees
+    });
+  })
 });
