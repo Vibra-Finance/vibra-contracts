@@ -21,7 +21,7 @@ contract("Trust", async (accounts) => {
       vibra.address,
       beneficiary,
       organization,
-      this.value,
+      this.fees,
       { from: admin }
     );
 
@@ -34,20 +34,28 @@ contract("Trust", async (accounts) => {
     assert.equal(balance.toString(), this.value.toString());
   });
 
-  it("Should create new trust and deposit 5 tokens", async () => {
+  it("Should emit a deposit event once the admin has deposited", async () => {
+    await vibra.increaseAllowance(trust.address, this.value, { from: admin });
+    let receipt = await trust.deposit(this.value, { from: admin });
+
+    expectEvent(receipt, "Deposit", { _from: admin, _amount: this.value });
+  });
+
+  it("Should revert when admin has deposited less than the minimum amount", async () => {
+    await vibra.increaseAllowance(trust.address, this.value, { from: admin });
+    await expectRevert(
+      trust.deposit(this.fees, { from: admin }),
+      "Deposit must be greater than the min balance"
+    );
+  });
+
+  it("Should deposit 5 tokens to the smart contract address", async () => {
     await vibra.increaseAllowance(trust.address, this.value, { from: admin });
     await trust.deposit(this.value, { from: admin });
 
     let balance = await vibra.balanceOf.call(trust.address);
 
     assert.equal(balance.toString(), this.value.toString());
-  });
-
-  it("Should emit a deposit event once the admin has deposited", async () => {
-    await vibra.increaseAllowance(trust.address, this.value, { from: admin });
-    let receipt = await trust.deposit(this.value, { from: admin });
-
-    expectEvent(receipt, "Deposit", { _from: admin, _amount: this.value });
   });
 
   it("Should charge fees to the smart contract", async () => {
@@ -59,5 +67,4 @@ contract("Trust", async (accounts) => {
 
     assert.equal(balance.toString(), this.fees.toString());
   });
-
 });
