@@ -9,9 +9,9 @@ const {
 const Trust = artifacts.require("Trust");
 const Vibra = artifacts.require("Vibra");
 
-constract("Trust", async (accounts) => {
+contract("Trust", async (accounts) => {
   let trust, vibra;
-  const [admin, manager, beneficiary, organization] = accounts;
+  const [admin, beneficiary, organization] = accounts;
 
   beforeEach(async () => {
     vibra = await Vibra.new({ from: admin });
