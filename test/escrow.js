@@ -14,6 +14,10 @@ contract("Escrow", async (accounts) => {
   const [admin, buyer, seller] = accounts;
   this.temp = new BN("2000000000000000000");
   this.value = new BN("5000000000000000000");
+  this.deposit = async () => {
+    await vibra.increaseAllowance(escrow.address, this.value, { from: buyer });
+    await escrow.deposit(this.value, { from: buyer });
+  };
 
   beforeEach(async () => {
     vibra = await Vibra.new({ from: admin });
@@ -54,8 +58,7 @@ contract("Escrow", async (accounts) => {
   });
 
   it("Should have a state of Awaiting Delivery once deposit is made", async () => {
-    await vibra.increaseAllowance(escrow.address, this.value, { from: buyer });
-    await escrow.deposit(this.value, { from: buyer });
+    await this.deposit();
 
     let status = await escrow.state.call();
 
@@ -63,8 +66,7 @@ contract("Escrow", async (accounts) => {
   });
 
   it("Should have a balance of 5 tokens once the buyer has deposited", async () => {
-    await vibra.increaseAllowance(escrow.address, this.value, { from: buyer });
-    await escrow.deposit(this.value, { from: buyer });
+    await this.deposit();
 
     let balance = await vibra.balanceOf.call(escrow.address);
 
@@ -72,8 +74,7 @@ contract("Escrow", async (accounts) => {
   });
 
   it("Should send 5 tokens to the seller from the smart contract, leaving an escrow balance of 0", async () => {
-    await vibra.increaseAllowance(escrow.address, this.value, { from: buyer });
-    await escrow.deposit(this.value, { from: buyer });
+    await this.deposit();
     await escrow.confirmDelivery({ from: buyer });
 
     let balance = await vibra.balanceOf.call(escrow.address);
@@ -82,8 +83,7 @@ contract("Escrow", async (accounts) => {
   });
 
   it("Should send 5 tokens to the seller from the smart contract", async () => {
-    await vibra.increaseAllowance(escrow.address, this.value, { from: buyer });
-    await escrow.deposit(this.value, { from: buyer });
+    await this.deposit();
     await escrow.confirmDelivery({ from: buyer });
 
     let balance = await vibra.balanceOf.call(seller);
