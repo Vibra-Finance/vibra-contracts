@@ -38,8 +38,8 @@ contract Trust {
     } 
 
     function deposit(uint256 amount) public onlyAdmin returns (bool) {
-        require(vibra.allowance(msg.sender, address(this)) > amount, "Insufficient allowance");
-        require(vibra.balanceOf(msg.sender) > amount, "Insufficient balance");
+        require(vibra.allowance(msg.sender, address(this)) >= amount, "Insufficient allowance");
+        require(vibra.balanceOf(msg.sender) >= amount, "Insufficient balance");
 
         vibra.transferFrom(msg.sender, address(this), amount);
 
@@ -48,12 +48,12 @@ contract Trust {
         return true;
     }
 
-    function payFees(uint256 amount) public onlyAdmin returns (bool) {
+    function chargeFees(uint256 amount) public onlyOrganization returns (bool) {
         require(balance > amount, "Insufficient balance");
-        require(vibra.transferFrom(address(this), organization, amount), "Unable to complete payment");
+        require(vibra.transfer(msg.sender, amount), "Unable to complete payment");
 
         balance -= amount;
-        emit Payment(msg.sender, organization, amount);
+        emit Payment(address(this), organization, amount);
         return true;
     }
 
