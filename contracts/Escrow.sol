@@ -23,7 +23,7 @@ contract Escrow {
         _;
     }
 
-    Vibra public vibra;
+    Vibra private vibra;
     uint256 public value;
     State public state;
     address public buyer;
@@ -31,24 +31,26 @@ contract Escrow {
     address admin;
 
     constructor(
-        Vibra _vibra,
+        address _vibra,
         uint256 _value,
-        address payable _seller,
-        address _buyer
-    ) public {
-        vibra = _vibra;
+        address _buyer,
+        address payable _seller
+    ) {
+        vibra = Vibra(_vibra);
         value = _value;
-        seller = _seller;
         buyer = _buyer;
+        seller = _seller;
         admin = msg.sender;
     }
 
     function deposit(uint256 amount) public onlyBuyer {
-        require(state == State.AWAITING_PAYMENT);
-        require(amount == value);
+        require(
+            state == State.AWAITING_PAYMENT,
+            "A deposit was already completed"
+        );
+        require(amount == value, "Incorrect deposit amount");
 
-        vibra.increaseAllowance(msg.sender, amount);
-        vibra.transfer(msg.sender, amount);
+        vibra.transferFrom(msg.sender, address(this), amount);
 
         state = State.AWAITING_DELIVERY;
 
@@ -56,10 +58,15 @@ contract Escrow {
     }
 
     function confirmDelivery() public onlyBuyer {
-        require(state == State.AWAITING_DELIVERY);
+        require(
+            state == State.AWAITING_DELIVERY,
+            "Must be in awaiting delivery state"
+        );
 
-        seller.transfer(address(this).balance);
+        vibra.transfer(seller, value);
 
-        emit Payment(seller, address(this).balance);
+        state = State.COMPLETE;
+
+        emit Payment(seller, value);
     }
 }
