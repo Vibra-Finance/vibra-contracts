@@ -5,39 +5,49 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Item.sol";
 
 contract ItemManager is Ownable {
-     enum SupplyChainSteps{Created, Paid, Delivered}
+    enum SupplyChainSteps {
+        Created,
+        Paid,
+        Delivered
+    }
 
-     struct S_Item {
+    struct S_Item {
         ItemManager.SupplyChainSteps _step;
         string _identifier;
-        uint _priceInWei;
+        uint256 _priceInWei;
     }
-    mapping(uint => S_Item) public items;
-    uint index;
+    mapping(uint256 => S_Item) public items;
+    uint256 index;
 
-    event SupplyChainStep(uint _itemIndex, uint _step);
+    event SupplyChainStep(uint256 _itemIndex, uint256 _step);
 
-    function createItem(string memory _identifier, uint _priceInWei) public onlyOwner {
-
+    function createItem(string memory _identifier, uint256 _priceInWei)
+        public
+        onlyOwner
+    {
         items[index]._priceInWei = _priceInWei;
         items[index]._step = SupplyChainSteps.Created;
         items[index]._identifier = _identifier;
-        emit SupplyChainStep(index, uint(items[index]._step));
+        emit SupplyChainStep(index, uint256(items[index]._step));
         index++;
     }
 
-     function triggerPayment(uint _index) public payable {
+    function triggerPayment(uint256 _index) public payable {
         require(items[_index]._priceInWei <= msg.value, "Not fully paid");
-        require(items[_index]._step == SupplyChainSteps.Created, "Item is further in the supply chain");
+        require(
+            items[_index]._step == SupplyChainSteps.Created,
+            "Item is further in the supply chain"
+        );
         items[_index]._step = SupplyChainSteps.Paid;
-        emit SupplyChainStep(_index, uint(items[_index]._step));
+        emit SupplyChainStep(_index, uint256(items[_index]._step));
     }
 
-    function triggerDelivery(uint _index) public onlyOwner {
-        require(items[_index]._step == SupplyChainSteps.Paid, "Item is further in the supply chain");
+    function triggerDelivery(uint256 _index) public onlyOwner {
+        require(
+            items[_index]._step == SupplyChainSteps.Paid,
+            "Item is further in the supply chain"
+        );
         items[_index]._step = SupplyChainSteps.Delivered;
-        emit SupplyChainStep(_index, uint(items[_index]._step));
+        emit SupplyChainStep(_index, uint256(items[_index]._step));
     }
 }
-
-

@@ -29,7 +29,7 @@ contract("Trust", async (accounts) => {
       this.fees,
       { from: admin }
     );
-
+    // mint 5 tokens to the admin address for testing
     await vibra.mint(admin, this.value, { from: dev });
   });
 
@@ -126,19 +126,21 @@ contract("Trust", async (accounts) => {
     );
   });
 
-  it ("Should send 5 tokens back to admin after withdrawing all", async () => {
+  it("Should send 5 tokens back to admin after withdrawing all", async () => {
     await this.deposit();
-    await trust.withdrawAll({from: admin});
+    await trust.withdrawAll({ from: admin });
 
     let balance = await vibra.balanceOf.call(admin);
 
     assert.equal(balance.toString(), this.value.toString());
-  })
+  });
 
   it("Should emit a LowBalance event once the admin reaches minBalance", async () => {
     await this.deposit();
-    let receipt = await trust.withdraw(new BN("4000000000000000000"), { from: admin });
+    let receipt = await trust.withdraw(new BN("4000000000000000000"), {
+      from: admin,
+    });
 
-    expectEvent(receipt, "LowBalance", { _holder: admin, _balance: this.fees})
-  })
+    expectEvent(receipt, "LowBalance", { _holder: admin, _balance: this.fees });
+  });
 });
