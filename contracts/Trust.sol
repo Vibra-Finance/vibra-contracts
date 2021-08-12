@@ -12,10 +12,7 @@ contract Trust {
     uint256 public minBalance;
 
     modifier onlyAdmin() {
-        require(
-            msg.sender == admin,
-            "Only the admin can call this function"
-        );
+        require(msg.sender == admin, "Only the admin can call this function");
         _;
     }
 
@@ -82,33 +79,31 @@ contract Trust {
         emit Payment(address(this), organization, amount);
 
         if (balance <= minBalance) {
-            emit LowBalance(admin, address(this).balance);
+            emit LowBalance(admin, balance);
         }
         return true;
     }
 
     function withdraw(uint256 amount) public onlyAdmin returns (bool) {
         require(balance > amount, "Insufficient balance");
-        require(vibra.transferFrom(address(this), msg.sender, amount));
+        require(vibra.transfer(msg.sender, amount));
 
         balance -= amount;
         emit Withdrawal(msg.sender, amount);
+
+        if (balance <= minBalance) {
+            emit LowBalance(admin, balance);
+        }
+
         return true;
     }
 
     function withdrawAll() public onlyAdmin returns (bool) {
         require(balance > 0, "There is no balance");
-        require(
-            vibra.transferFrom(
-                address(this),
-                msg.sender,
-                address(this).balance
-            ),
-            "Insufficient balance"
-        );
+        require(vibra.transfer(msg.sender, balance), "Insufficient balance");
 
         balance = 0;
-        emit Withdrawal(msg.sender, address(this).balance);
+        emit Withdrawal(msg.sender, balance);
         return true;
     }
 }
