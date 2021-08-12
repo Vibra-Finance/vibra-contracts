@@ -111,9 +111,34 @@ contract("Trust", async (accounts) => {
     await this.deposit();
     let receipt = await trust.withdraw(this.fees, { from: admin });
 
-    expectEvent(receipt, "Withdrawal",{
+    expectEvent(receipt, "Withdrawal", {
       _to: admin,
-      _amount: this.fees
+      _amount: this.fees,
     });
+  });
+
+  it("Should revert if anybody other than the admin tries to withdraw all", async () => {
+    await this.deposit();
+
+    await expectRevert(
+      trust.withdrawAll({ from: organization }),
+      "Only the admin can call this function"
+    );
+  });
+
+  it ("Should send 5 tokens back to admin after withdrawing all", async () => {
+    await this.deposit();
+    await trust.withdrawAll({from: admin});
+
+    let balance = await vibra.balanceOf.call(admin);
+
+    assert.equal(balance.toString(), this.value.toString());
+  })
+
+  it("Should emit a LowBalance event once the admin reaches minBalance", async () => {
+    await this.deposit();
+    let receipt = await trust.withdraw(new BN("4000000000000000000"), { from: admin });
+
+    expectEvent(receipt, "LowBalance", { _holder: admin, _balance: this.fees})
   })
 });
