@@ -4,14 +4,18 @@ pragma solidity ^0.8.0;
 import "./Vibra.sol";
 
 contract Escrow {
+    Vibra internal vibra;
+    uint256 public value;
+    State public state;
+    address public buyer;
+    address payable seller;
+    address admin;
+
     enum State {
         AWAITING_PAYMENT,
         AWAITING_DELIVERY,
         COMPLETE
     }
-
-    event Deposit(address indexed _from, uint256 _value);
-    event Payment(address indexed _to, uint256 _value);
 
     modifier onlyBuyer() {
         require(msg.sender == buyer);
@@ -23,12 +27,8 @@ contract Escrow {
         _;
     }
 
-    Vibra private vibra;
-    uint256 public value;
-    State public state;
-    address public buyer;
-    address payable seller;
-    address admin;
+    event Deposit(address indexed _from, uint256 _value);
+    event Payment(address indexed _to, uint256 _value);
 
     constructor(
         address _vibra,

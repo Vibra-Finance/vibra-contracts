@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./Vibra.sol";
 
 contract Trust {
-    Vibra private vibra;
+    Vibra internal vibra;
     address public admin;
     address public beneficiary;
     address public organization;
