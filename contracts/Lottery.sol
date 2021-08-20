@@ -55,7 +55,7 @@ contract VibraLotto is Ownable  {
     struct LottoInfo {
         uint256 lotteryID;          // ID for lotto
         Status lotteryStatus;       // Status for lotto
-        uint256 prizePoolInCake;    // The amount of cake for prize money
+        uint256 prizePoolInVibra;    // The amount of cake for prize money
         uint256 costPerTicket;      // Cost per ticket in $vibra
         uint8[] prizeDistribution;  // The distribution for prize money
         uint256 startingTimestamp;      // Block timestamp for star of lotto
@@ -138,6 +138,14 @@ contract VibraLotto is Ownable  {
         
 
     }
+
+    function numberDrawn(uint256 _lotteryId, bytes32 _requestId, uint256 _randomNumber) external onlyRandomGenerator() {
+        require(allLotteries_[_lotteryId].lotteryStatus == Status.Closed, "Draw numbers first");
+        if(requestId_ == _requestId){
+            allLotteries_[_lotteryId].lotteryStatus = Status.Completed;
+            allLotteries_[_lotteryId].winningNumbers = _split(_randomNumber);
+        }
+    }
     
     
     function createNewLotto(uint8[] calldata _prizeDistribution, uint256 _prizePoolInVibra, uint256 _costPerTicket, uint256 _startingTimeStamp, uint256 _closingTimeStamp) external onlyOwner()  returns(uint256 lotteryId) {
@@ -163,6 +171,40 @@ contract VibraLotto is Ownable  {
         allLotteries_[lotteryId] = newLottery;
 
 
+    }
+
+    function withdrawVibra(uint256 _amount) external onlyOwner() {
+        vibra_.transfer(msg.sender, _amount);
+    }
+
+    
+
+    function _getNumberOfMatching(uint16[] memory _userNumbers, uint16[] memory _winningNumbers) internal pure returns(uint8 noOfmatching) {
+        for (uint256 i = 0; i < _winningNumbers.length; i++) {
+            if(_userNumbers[i] == _winningNumbers[i]) {
+                noOfmatching += 1;
+            }
+        }
+    }
+
+    function _prizeForMatching(uint8 _noOfMatching, uint256 _lotteryId) internal view returns(uint256) {
+        uint256 prize = 0;
+        if(_noOfMatching == 0) {
+            return 0;
+        }
+        uint256 perOfPool = allLotteries_[_lotteryId].prizeDistribution[_noOfMatching-1];
+        prize = allLotteries_[_lotteryId].prizePoolInVibra.mul(perOfPool);
+        return prize.div(100);
+    }
+
+    function _split(uint _randomNumber) internal view returns(uint16[] memory) {
+        uint16[] memory winningNumbers = new uint16[](sizeOfLottery_);
+        for(uint i = 0; i < sizeOfLottery_; i++){
+            bytes32 hashOfRandom = keccak256(abi.encodePacked(_randomNumber, i));
+            uint256 numberRepresentation = uint256(hashOfRandom);
+            winningNumbers[i] = uint16(numberRepresentation.mod(maxValidRange_));
+        }
+        return winningNumbers;
     }
 
 
