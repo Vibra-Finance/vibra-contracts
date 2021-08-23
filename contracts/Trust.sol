@@ -1,20 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Vibra.sol";
 
-contract Trust {
+contract Trust is Ownable {
     Vibra internal vibra;
-    address public admin;
     address public beneficiary;
     address public organization;
-    uint256 public balance;
+    uint256 internal balance;
     uint256 public minBalance;
-
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only the admin can call this function");
-        _;
-    }
 
     modifier onlyBeneficiary() {
         require(
@@ -43,14 +38,13 @@ contract Trust {
         address _organization,
         uint256 _minBalance
     ) {
-        admin = msg.sender;
         vibra = Vibra(_vibra);
         beneficiary = _beneficiary;
         organization = _organization;
         minBalance = _minBalance;
     }
 
-    function deposit(uint256 amount) public onlyAdmin returns (bool) {
+    function deposit(uint256 amount) public onlyOwner returns (bool) {
         require(
             amount > minBalance,
             "Deposit must be greater than the min balance"
@@ -79,12 +73,12 @@ contract Trust {
         emit Payment(address(this), organization, amount);
 
         if (balance <= minBalance) {
-            emit LowBalance(admin, balance);
+            emit LowBalance(owner(), balance);
         }
         return true;
     }
 
-    function withdraw(uint256 amount) public onlyAdmin returns (bool) {
+    function withdraw(uint256 amount) public onlyOwner returns (bool) {
         require(balance > amount, "Insufficient balance");
         require(vibra.transfer(msg.sender, amount));
 
@@ -92,18 +86,18 @@ contract Trust {
         emit Withdrawal(msg.sender, amount);
 
         if (balance <= minBalance) {
-            emit LowBalance(admin, balance);
+            emit LowBalance(owner(), balance);
         }
 
         return true;
     }
 
-    function withdrawAll() public onlyAdmin returns (bool) {
+    function withdrawAll() public onlyOwner returns (bool) {
         require(balance > 0, "There is no balance");
         require(vibra.transfer(msg.sender, balance), "Insufficient balance");
 
-        balance = 0;
         emit Withdrawal(msg.sender, balance);
+        balance = 0;
         return true;
     }
 }

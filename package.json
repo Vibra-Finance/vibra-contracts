@@ -1,7 +1,8 @@
 {
   "dependencies": {
+    "@chainlink/contracts": "^0.2.1",
     "@openzeppelin/test-environment": "^0.1.9",
-    "@truffle/hdwallet-provider": "^1.4.1",
+    "@truffle/hdwallet-provider": "^1.0.37",
     "web3": "^1.4.0"
   },
   "devDependencies": {

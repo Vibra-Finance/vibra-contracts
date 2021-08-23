@@ -16,7 +16,7 @@ contract("Escrow", async (accounts) => {
   this.value = new BN("5000000000000000000");
   this.deposit = async () => {
     await vibra.increaseAllowance(escrow.address, this.value, { from: buyer });
-    await escrow.deposit(this.value, { from: buyer });
+    return await escrow.deposit(this.value, { from: buyer });
   };
 
   beforeEach(async () => {
@@ -65,6 +65,12 @@ contract("Escrow", async (accounts) => {
     assert.equal(status.toNumber(), 1);
   });
 
+  it("Should emit a Deposit event once a user makes a deposit", async () => {
+    let receipt = await this.deposit();
+
+    expectEvent(receipt, "Deposit", { _from: buyer, _value: this.value });
+  });
+
   it("Should have a balance of 5 tokens once the buyer has deposited", async () => {
     await this.deposit();
 
@@ -90,4 +96,5 @@ contract("Escrow", async (accounts) => {
 
     assert.equal(balance.toString(), this.value.toString());
   });
+
 });
