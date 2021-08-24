@@ -71,7 +71,7 @@ contract("Escrow", async ([admin, buyer, seller]) => {
 
     let status = await this.escrow.state.call();
 
-    assert.equal(status.toNumber(), 1);
+    assert.equal(status.toString(), "1");
   });
 
   it("Should emit a Deposit event once a user makes a deposit", async () => {
@@ -104,7 +104,7 @@ contract("Escrow", async ([admin, buyer, seller]) => {
     expectEvent(receipt, "Payment", { _to: seller, _value: this.value });
   });
 
-  it("Should set escrow state to COMPLETE (4)", async () => {
+  it("Should set escrow state to COMPLETE (4) after successful delivery", async () => {
     await this.deposit();
     await this.escrow.confirmDelivery({ from: buyer });
 
@@ -131,6 +131,26 @@ contract("Escrow", async ([admin, buyer, seller]) => {
     );
   });
 
+  it("Should set escrow state to DISPUTED (2) when called by buyer", async () => {
+    await this.deposit();
+    await this.escrow.dispute({ from: buyer });
+
+    let state = await this.escrow.state.call();
+
+    assert.equal(state.toString(), "2");
+  });
+
+  it("Should emit a Dispute event when called by buyer", async () => {
+    await this.deposit();
+    let receipt = await this.escrow.dispute({ from: buyer });
+
+    expectEvent(receipt, "Dispute", {
+      _buyer: buyer,
+      _seller: seller,
+      _value: this.value,
+    });
+  });
+
   it("Should revert when the contract is in the incorrect state", async () => {
     await this.deposit();
 
@@ -150,5 +170,23 @@ contract("Escrow", async ([admin, buyer, seller]) => {
     expectEvent(receipt, "Refund", { _to: buyer, _value: this.value });
   });
 
-  it("Should send 5 tokens back to the buyer after a refund is processed", async () => {});
+  it("Should set escrow state to CANCELED (3) when a refund is processed", async () => {
+    await this.deposit();
+    await this.escrow.dispute({ from: buyer });
+    await this.escrow.processRefund({ from: admin });
+
+    let state = await this.escrow.state.call();
+
+    assert.equal(state.toString(), "3");
+  });
+
+  it("Should send 5 tokens back to the buyer after a refund is processed", async () => {
+    await this.deposit();
+    await this.escrow.dispute({ from: buyer });
+    await this.escrow.processRefund({ from: admin });
+
+    let balance = await this.vibra.balanceOf.call(buyer);
+
+    assert.equal(balance.toString(), this.value.toString());
+  });
 });
