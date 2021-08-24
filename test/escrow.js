@@ -88,7 +88,24 @@ contract("Escrow", async (accounts) => {
     assert.equal(balance.toString(), "0");
   });
 
-  it("Should send 5 tokens to the seller from the smart contract", async () => {
+  it("Should emit a Payment event when delivery is confirmed", async () => {
+    await this.deposit();
+    let receipt = await escrow.confirmDelivery({ from: buyer });
+
+    expectEvent(receipt, "Payment", { _to: seller, _value: this.value });
+  });
+
+
+  it("Should set escrow state to COMPLETE (4)", async () => {
+    await this.deposit();
+    await escrow.confirmDelivery({ from: buyer });
+
+    let state = await escrow.state.call();
+
+    assert.equal(state.toString(), "4");
+  });
+
+  it("Should send 5 tokens to the seller from the smart contract, giving the seller a balance of 5", async () => {
     await this.deposit();
     await escrow.confirmDelivery({ from: buyer });
 
@@ -97,4 +114,33 @@ contract("Escrow", async (accounts) => {
     assert.equal(balance.toString(), this.value.toString());
   });
 
+  it("Should revert if anybody other than the buyer tries to dispute", async () => {
+    await this.deposit();
+
+    await expectRevert(
+      escrow.dispute({ from: admin }),
+      "Only the buyer can call this function"
+    );
+  });
+  
+  it("Should revert when the contract is in the incorrect state", async () => {
+    await this.deposit();
+
+    // skipping dispute call so contract is still in AWAITING DELIVERY STATE
+    await expectRevert(
+      escrow.processRefund({ from: admin }),
+      "Must be in disputed state"
+    );
+  });
+
+  it("Should emit a Refund event when a refund is processed", async () => {
+    await this.deposit();
+    await escrow.dispute({ from: buyer });
+
+    let receipt = await escrow.processRefund({ from: admin });
+
+    expectEvent(receipt, "Refund", { _to: buyer, _value: this.value });
+  });
+
+  it("Should send 5 tokens back to the buyer after a refund is processed", async () => {});
 });

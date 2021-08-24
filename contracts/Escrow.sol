@@ -5,27 +5,30 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Vibra.sol";
 
 contract Escrow is Ownable {
-    Vibra internal vibra;
-    uint256 public value;
     State public state;
+    Vibra internal vibra;
+    uint256 internal value;
     address public buyer;
-    address internal seller;
+    address public seller;
 
     enum State {
         AWAITING_PAYMENT,
         AWAITING_DELIVERY,
+        DISPUTED,
         CANCELED,
         COMPLETE
     }
 
     modifier onlyBuyer() {
-        require(msg.sender == buyer);
+        require(msg.sender == buyer, "Only the buyer can call this function");
         _;
     }
 
     event Deposit(address indexed _from, uint256 _value);
-    event Refund(address _to, uint256 _value);
     event Payment(address indexed _to, uint256 _value);
+    event Refund(address _to, uint256 _value);
+    event Dispute(address indexed _buyer, address indexed _seller, uint256 _value);
+
 
     constructor(
         address _vibra,
@@ -64,15 +67,23 @@ contract Escrow is Ownable {
         emit Payment(seller, value);
     }
 
-    function emergencyWithdrawal() public onlyOwner {
+    function dispute() public onlyBuyer {
+        require(state == State.AWAITING_DELIVERY, "Must be in awaiting delivery state");
+        state = State.DISPUTED;
+
+        emit Dispute(buyer, seller, value);
+    }
+
+    function processRefund() public onlyOwner {
         require(
-            state == State.AWAITING_DELIVERY,
-            "Must be in awaiting delivery state"
+            state == State.DISPUTED,
+            "Must be in disputed state"
         );
 
         vibra.transfer(buyer, value);
-        state = State.CANCELED;
-
         emit Refund(buyer, value);
+
+        state = State.CANCELED;
+        value = 0;
     }
 }
