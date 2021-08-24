@@ -1,7 +1,7 @@
+const { BN } = require("@openzeppelin/test-helpers");
 const Vibra = artifacts.require("Vibra");
 const Escrow = artifacts.require("Escrow");
 const Trust = artifacts.require("Trust");
-const { BN } = require("@openzeppelin/test-helpers");
 
 module.exports = async (deployer, _, accounts) => {
   const [admin, buyer, seller, parent, child] = accounts;
