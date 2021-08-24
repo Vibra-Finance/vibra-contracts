@@ -27,8 +27,11 @@ contract Escrow is Ownable {
     event Deposit(address indexed _from, uint256 _value);
     event Payment(address indexed _to, uint256 _value);
     event Refund(address _to, uint256 _value);
-    event Dispute(address indexed _buyer, address indexed _seller, uint256 _value);
-
+    event Dispute(
+        address indexed _buyer,
+        address indexed _seller,
+        uint256 _value
+    );
 
     constructor(
         address _vibra,
@@ -68,17 +71,17 @@ contract Escrow is Ownable {
     }
 
     function dispute() public onlyBuyer {
-        require(state == State.AWAITING_DELIVERY, "Must be in awaiting delivery state");
+        require(
+            state == State.AWAITING_DELIVERY,
+            "Must be in awaiting delivery state"
+        );
         state = State.DISPUTED;
 
         emit Dispute(buyer, seller, value);
     }
 
     function processRefund() public onlyOwner {
-        require(
-            state == State.DISPUTED,
-            "Must be in disputed state"
-        );
+        require(state == State.DISPUTED, "Must be in disputed state");
 
         vibra.transfer(buyer, value);
         emit Refund(buyer, value);
