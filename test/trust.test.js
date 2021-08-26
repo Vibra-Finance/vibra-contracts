@@ -12,7 +12,7 @@ contract("Trust", async ([dev, admin, beneficiary, organization]) => {
   this.fees = new BN("1000000000000000000");
   this.value = new BN("5000000000000000000");
   this.deposit = async () => {
-    // convenience method to increase allowance and send 5 tokens to smart contract from admin
+    // convenience method to increase allowance and send 5 tokens to smart contract from admin (parent)
     await this.vibra.increaseAllowance(this.trust.address, this.value, {
       from: admin,
     });
