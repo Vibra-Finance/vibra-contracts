@@ -6,8 +6,9 @@ import "./Escrow.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract WebShop is Ownable {
-    Vibra internal vibra;
+    Vibra internal immutable vibra;
     ShopStatus public status;
+    string public name;
     uint256 private itemCounter;
     uint256 private availableItemsCounter;
 
@@ -16,6 +17,7 @@ contract WebShop is Ownable {
         string name;
         uint256 price;
         string url;
+        address creator;
         address owner;
         string trackingNumber;
         address escrow;
@@ -34,36 +36,41 @@ contract WebShop is Ownable {
     enum ItemStatus {
         AVAILABLE,
         SOLD,
+        IN_TRANSIT,
         REMOVED
     }
 
-    mapping(uint256 => Item) private items;
-    uint256[] itemList;
+    address[] private escrows;
+    Item[] private items;
 
     event Sale(address indexed owner, address indexed buyer, uint256 price);
     event AddItem(address indexed owner, uint256 itemId);
+    event ItemStep(
+        address indexed owner,
+        ItemStatus indexed itemStatus,
+        uint256 itemId
+    );
     event CreateEscrow(
         address indexed buyer,
         address indexed owner,
         uint256 value
     );
 
-    constructor(address _vibra) {
+    constructor(address _vibra, string memory _name) {
         vibra = Vibra(_vibra);
-        itemCounter = 0;
-        availableItemsCounter = 0;
+        _name = _name;
     }
 
     function getItemCount() external view returns (uint256) {
-        return itemCounter;
+        return items.length;
     }
 
-    function getAvailableItemsCount() external view returns (uint256) {
-        return availableItemsCounter;
+    function getItemById(uint256 _id) external view returns (Item memory) {
+        return items[_id];
     }
 
-    function getItemById(uint256 _itemId) external view returns (Item memory) {
-        return items[_itemId];
+    function getAllItems() external view returns (Item[] memory) {
+        return items;
     }
 
     function buyItem(uint256 _id) public {
@@ -81,12 +88,14 @@ contract WebShop is Ownable {
 
         if (item.itemType == ItemType.PHYSICAL) {
             _buyPhysicalItem(item, msg.sender);
+            item.itemStatus = ItemStatus.IN_TRANSIT;
         } else {
             vibra.transferFrom(msg.sender, owner(), item.price);
+            item.trackingNumber = "N/A";
+            item.itemStatus = ItemStatus.SOLD;
         }
 
         item.owner = msg.sender;
-        item.itemStatus = ItemStatus.SOLD;
 
         availableItemsCounter--;
 
@@ -101,23 +110,35 @@ contract WebShop is Ownable {
     ) public returns (bool) {
         require(status != ShopStatus.CLOSED, "Shop is closed");
 
-        Item storage item = items[itemCounter];
-        item.id = itemCounter;
-        item.name = _name;
-        item.price = _price;
-        item.url = _url;
-        item.owner = owner();
-        item.itemType = _type;
-        item.itemStatus = ItemStatus.AVAILABLE;
-
-        itemList.push(itemCounter);
+        items.push(
+            Item({
+                id: items.length + 1,
+                name: _name,
+                price: _price,
+                url: _url,
+                owner: owner(),
+                creator: owner(),
+                trackingNumber: "",
+                escrow: address(0),
+                itemType: _type,
+                itemStatus: ItemStatus.AVAILABLE
+            })
+        );
 
         emit AddItem(owner(), itemCounter);
-
-        itemCounter++;
         availableItemsCounter++;
 
         return true;
+    }
+
+    function addItems(Item[] memory _items) external onlyOwner {
+        require(_items.length > 0, "Items cannot be empty");
+
+        for (uint256 i = 0; i < _items.length; i++) {
+            Item memory item = _items[i];
+            items.push(item);
+            availableItemsCounter++;
+        }
     }
 
     function _buyPhysicalItem(Item storage _item, address _buyer)
@@ -139,13 +160,40 @@ contract WebShop is Ownable {
         escrow.deposit(_item.price);
 
         _item.escrow = address(escrow);
+        
+        escrows.push(address(escrow));
 
         emit CreateEscrow(msg.sender, owner(), _item.price);
         return true;
     }
 
-    function addTrackingNumber(uint256 _id, string memory _trackingNbr) public {
+    function addTrackingNumber(uint256 _id, string memory _trackingNbr)
+        public
+        onlyOwner
+    {
         Item storage item = items[_id];
+
+        require(
+            item.itemStatus == ItemStatus.IN_TRANSIT,
+            "Item must be in transit"
+        );
+
         item.trackingNumber = _trackingNbr;
+        item.itemStatus = ItemStatus.IN_TRANSIT;
+
+        emit ItemStep(item.owner, item.itemStatus, item.id);
+    }
+
+    function confirmDeliveryOfItem(uint256 _id, address _escrow) public {
+        require(items[_id].escrow == _escrow, "Invalid escrow address");
+        
+        Escrow escrow = Escrow(_escrow);
+
+        require(escrow.state() == Escrow.State.COMPLETE);
+
+        Item storage item = items[_id];
+        item.owner = msg.sender;
+        item.itemStatus = ItemStatus.SOLD;
+        
     }
 }

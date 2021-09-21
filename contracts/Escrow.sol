@@ -24,14 +24,10 @@ contract Escrow is Ownable {
         _;
     }
 
-    event Deposit(address indexed _from, uint256 _value);
-    event Payment(address indexed _to, uint256 _value);
-    event Refund(address _to, uint256 _value);
-    event Dispute(
-        address indexed _buyer,
-        address indexed _seller,
-        uint256 _value
-    );
+    event Deposit(address indexed from, uint256 value);
+    event Payment(address indexed to, uint256 value);
+    event Refund(address to, uint256 value);
+    event Dispute(address indexed buyer, address indexed seller, uint256 value);
 
     constructor(
         address _vibra,
@@ -45,17 +41,17 @@ contract Escrow is Ownable {
         seller = _seller;
     }
 
-    function deposit(uint256 amount) public onlyBuyer {
+    function deposit(uint256 _amount) external onlyBuyer {
         require(
             state == State.AWAITING_PAYMENT,
             "A deposit was already completed"
         );
-        require(amount == value, "Incorrect deposit amount");
+        require(_amount == value, "Incorrect deposit amount");
 
-        vibra.transferFrom(msg.sender, address(this), amount);
+        vibra.transferFrom(msg.sender, address(this), _amount);
         state = State.AWAITING_DELIVERY;
 
-        emit Deposit(msg.sender, amount);
+        emit Deposit(msg.sender, _amount);
     }
 
     function confirmDelivery() public onlyBuyer {
